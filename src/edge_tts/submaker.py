@@ -10,6 +10,9 @@ import re
 from typing import Callable, List, Tuple, Union
 from xml.sax.saxutils import escape, unescape
 
+PATTERN_CHI: str = r"[：“”‘’──{}【】·《》〈〉，、；。？！]"
+PATTERN_ENG: str = r"[\"\"''──{}[\]·<>.,;?!]"
+
 
 def formatter(
     sub_line_count: int, start_time: float, end_time: float, subdata: str
@@ -61,7 +64,7 @@ def _spinoff_sentence(sentence: str) -> Tuple[str, str, int]:
 def process_text(
     text: str,
     *,
-    pattern_chi: str = r"[：“”‘’──{}【】·《》〈〉，、；。？！]",
+    patterns: List[str] = [PATTERN_CHI, PATTERN_ENG],
     spinoff_sentence: Callable[[str], Tuple[str, str, int]] = _spinoff_sentence,
 ) -> List[Tuple[str, str, int]]:
     """
@@ -70,7 +73,7 @@ def process_text(
 
     Args:
         text (str): The text to be processed.
-        pattern_chi (str): The pattern of Chinese characters.
+        patterns (List[str]): The patterns used to split the text.
         spinoff_sentence (function): The function used to process the sentence.
 
     Returns:
@@ -78,11 +81,13 @@ def process_text(
     """
     if not isinstance(text, str):
         raise TypeError("text must be a string")
-    if not isinstance(pattern_chi, str):
-        raise TypeError("pattern_chi must be a string")
+    if not isinstance(patterns, list):
+        raise TypeError("patterns must be a list")
+    if not all(isinstance(pattern, str) for pattern in patterns):
+        raise TypeError("patterns must be a list of strings")
     if not callable(spinoff_sentence):
         raise TypeError("spinoff_sentence must be a function")
-    sentences = re.split(pattern_chi, text)
+    sentences = re.split("|".join(patterns), text)
     sentences = [sentence.strip() for sentence in sentences if sentence.strip()]
     three_dimensional_list = []
     for sentence in sentences:
@@ -149,10 +154,10 @@ class SubMaker:
             raise TypeError("text must be a string or a list")
 
         data = ""
-        sub_state_count = 0
-        sub_state_start = -1.0
-        sub_state_subs = ""
         sub_line_count = 0
+        sub_state_start = -float("inf")
+        sub_state_count = 0
+        sub_state_subs = ""
         for idx, (offset, subs) in enumerate(zip(self.offset, self.subs)):
             start_time, end_time = offset
             subs = unescape(subs)
@@ -160,7 +165,7 @@ class SubMaker:
             # wordboundary is guaranteed not to contain whitespace
             sub_state_subs += subs
 
-            if sub_state_start == -1.0:
+            if sub_state_start == -float("inf"):
                 sub_state_start = start_time
             sub_state_count += 1
 
@@ -170,31 +175,13 @@ class SubMaker:
                 or idx == len(self.offset) - 1
             ):
                 sub_line_count += 1
-                subs = sentence
-                split_subs: List[str] = [
-                    subs[i : i + 79] for i in range(0, len(subs), 79)
-                ]
-                for i in range(len(split_subs) - 1):
-                    sub = split_subs[i]
-                    split_at_word = True
-                    if sub[-1] == " ":
-                        split_subs[i] = sub[:-1]
-                        split_at_word = False
-
-                    if sub[0] == " ":
-                        split_subs[i] = sub[1:]
-                        split_at_word = False
-
-                    if split_at_word:
-                        split_subs[i] += "-"
-
                 data += formatter(
                     sub_line_count=sub_line_count,
                     start_time=sub_state_start,
                     end_time=end_time,
-                    subdata="".join(split_subs),
+                    subdata=sentence,
                 )
+                sub_state_start = -float("inf")
                 sub_state_count = 0
-                sub_state_start = -1
                 sub_state_subs = ""
         return data
