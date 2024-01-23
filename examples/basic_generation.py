@@ -2,7 +2,7 @@
 
 import asyncio
 import edge_tts
-import sys
+from playsound import playsound
 
 VOICE = "en-GB-SoniaNeural"
 OUTPUT_FILE = "temp.mp3"
@@ -11,7 +11,7 @@ async def speak(text: str) -> None:
     """Function to convert text to speech and play it."""
     communicate = edge_tts.Communicate(text, VOICE)
     await communicate.save(OUTPUT_FILE)
-    # Assuming edge_tts automatically plays the file, or you can add code to play OUTPUT_FILE here.
+    playsound(OUTPUT_FILE)
 
 async def amain() -> None:
     """Main function to keep running and take user input."""
