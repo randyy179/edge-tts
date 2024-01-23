@@ -4,12 +4,16 @@ import asyncio
 import edge_tts
 from playsound import playsound
 
-VOICE = "en-GB-SoniaNeural"
+# VOICE = "en-GB-SoniaNeural" # English
+VOICE = "zh-CN-YunxiNeural" # Chinese
+# VOICE = "zh-CN-XiaoyiNeural" # Chinese
+
 OUTPUT_FILE = "temp.mp3"
 
 async def speak(text: str) -> None:
     """Function to convert text to speech and play it."""
-    communicate = edge_tts.Communicate(text, VOICE)
+    # communicate = edge_tts.Communicate(text, VOICE)
+    communicate = edge_tts.Communicate(text, VOICE, rate="+40%")
     await communicate.save(OUTPUT_FILE)
     playsound(OUTPUT_FILE)
 
