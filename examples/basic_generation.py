@@ -1,26 +1,29 @@
 #!/usr/bin/env python3
 
-"""
-Basic example of edge_tts usage.
-"""
-
 import asyncio
-
 import edge_tts
+import sys
 
-TEXT = "Hello World!"
 VOICE = "en-GB-SoniaNeural"
-OUTPUT_FILE = "test.mp3"
+OUTPUT_FILE = "temp.mp3"
 
+async def speak(text: str) -> None:
+    """Function to convert text to speech and play it."""
+    communicate = edge_tts.Communicate(text, VOICE)
+    await communicate.save(OUTPUT_FILE)
+    # Assuming edge_tts automatically plays the file, or you can add code to play OUTPUT_FILE here.
 
 async def amain() -> None:
-    """Main function"""
-    communicate = edge_tts.Communicate(TEXT, VOICE)
-    await communicate.save(OUTPUT_FILE)
-
+    """Main function to keep running and take user input."""
+    while True:
+        text = input("Enter text to speak ('quit' to exit): ")
+        if text.lower() == 'quit':
+            print("Exiting program.")
+            break
+        await speak(text)
 
 if __name__ == "__main__":
-    loop = asyncio.get_event_loop_policy().get_event_loop()
+    loop = asyncio.get_event_loop()
     try:
         loop.run_until_complete(amain())
     finally:
